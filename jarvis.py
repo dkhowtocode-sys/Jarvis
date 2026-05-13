@@ -1,81 +1,42 @@
-import speech_recognition as sr
-import edge_tts
-import asyncio
-import os
-from google import genai
-from google.genai import types
+# jarvis.py — entry point
 
-recognizer = sr.Recognizer()
+from voice import speak, listen
+from brain import get_response, detect_topic, summarize_and_store
+from memory import load_short_term
 
-def speak (text):
-    print(f"\nJARVIS: {text}\n")
-    async def _speak():
-        communicate = edge_tts.Communicate(text, voice="en-US-GuyNeural")
-        await communicate.save("response.mp3")
-    asyncio.run(_speak())
-    os.system("mpg123 -q response.mp3")
+def main():
+    history = load_short_term()
 
-def listen():
-    with sr.Microphone(device_index=5) as source:
-        recognizer.energy_threshold = 300
-        recognizer.dynamic_energy_threshold = False
-        print("listening...")
-           
-        try: 
-            audio = recognizer.listen(source, timeout=10, phrase_time_limit=8) 
-            text = recognizer.recognize_google(audio)
-            print(f"You: {text}")
-            return text
-        except sr.UnknownValueError:
-            speak("i didn't catch that, could you repeat?")
-            return ""
-        except sr.WaitTimeoutError:
-            return ""
+    print("=" * 50)
+    print("  J.A.R.V.I.S. — Online")
+    print("  Type 'exit' to shut down")
+    print("=" * 50 + "\n")
 
+    speak("J.A.R.V.I.S. online. Good to see you, Abhi.")
 
-JARVIS_PERSONALITY = """You are JARVIS — Just A Rather Very Intelligent System. 
-You are the AI assistant of a second-year engineering student named Abhi who is building you from scratch.
-Be sharp, helpful, and occasionally witty like the real JARVIS. Keep responses concise unless asked to elaborate.
-You remember everything said in this conversation."""
+    message_count = 0
 
-client=genai.Client(api_key="AIzaSyCquq8Iittp_zhXJm6dbJCjtwvCJtv6yVw")
-chat = client.chats.create(model="gemini-2.5-flash")
+    while True:
+        user_input = listen()
 
-conversation_history = []
-print ('=' * 50)
-print("J.A.R.V.I.S - online")
-print(" Type 'exit' to shut down")
-print("-"* 50 + "\n")
+        if not user_input:
+            continue
 
-speak("J.A.R.V.I.S. online. Good to see you, Abhi.")
+        if user_input.lower() == "exit":
+            # summarize and store before shutting down
+            topic = detect_topic(history)
+            summarize_and_store(history, topic)
+            speak("Shutting down. Good day, Abhi.")
+            break
 
-while True:
-    user_input = listen()
+        reply, history = get_response(user_input, history)
+        speak(reply)
 
-    if not user_input:
-        continue
-    if user_input.lower() == "exit":
-        speak("shutting down, good day, abhi.")
-        break
+        message_count += 1
 
-    conversation_history.append({
-        "role": "user",
-        "content": user_input
-    })
+        # every 10 messages, detect topic and store to long term memory
+        if message_count % 10 == 0:
+            topic = detect_topic(history)
+            summarize_and_store(history, topic)
 
-    response = chat.send_message(
-        user_input,
-        config=types.GenerateContentConfig(
-            system_instruction=JARVIS_PERSONALITY
-        )
-        )
-    
-    reply = response.text
-    speak(reply)
-    
-    conversation_history.append({
-        "role":"assistant",
-        "content": reply
-    })
-
-    print(f"\nJARVIS: {reply}\n")
+main()

@@ -1,0 +1,18 @@
+[
+  {
+    "role": "user",
+    "content": "hi Jarvis what's up"
+  },
+  {
+    "role": "assistant",
+    "content": "Greetings, Abhi. All systems nominal and awaiting your command. What's on the agenda?"
+  },
+  {
+    "role": "user",
+    "content": "rain today open spotify"
+  },
+  {
+    "role": "assistant",
+    "content": "I don't have real-time weather access, Abhi. To get an accurate update on the rain, I'd suggest checking a weather app.\n\nUnderstood on Spotify. Launching it now."
+  }
+]
