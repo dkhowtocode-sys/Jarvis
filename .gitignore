@@ -1,0 +1,6 @@
+venv/
+memory/chroma_db/
+audio/response.mp3
+__pycache__/
+*.pyc
+.env
