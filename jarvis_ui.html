@@ -495,22 +495,33 @@
   }
 
   function toggleListen() {
-    if (textMode) return;
-    if (state === 'idle') {
-      setState('listening');
-      setTimeout(() => {
-        addMessage('user', 'Hey JARVIS, what\'s the weather in Bangalore?');
-        setState('thinking');
-        setTimeout(() => {
-          setState('speaking');
-          addMessage('jarvis', 'Currently 28°C and partly cloudy in Bangalore. A gentle breeze from the southwest. Shall I pull up the full forecast?');
-          setTimeout(() => setState('idle'), 3000);
-        }, 1200);
-      }, 2000);
-    } else if (state === 'listening') {
-      setState('idle');
-    }
+  if (textMode) return;
+  if (appState === 'idle') {
+    setState('listening');
+    setTimeout(() => {
+      addMsg('user', "Hey JARVIS, what's the weather in Bangalore?");
+      setState('thinking');
+      sendToJarvis("Hey JARVIS, what's the weather in Bangalore?");
+    }, 2000);
+  } else if (appState === 'listening') setState('idle');
+}
+
+async function sendToJarvis(message) {
+  try {
+    const res = await fetch('http://localhost:5000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    setState('speaking');
+    addMsg('jarvis', data.reply);
+    setTimeout(() => setState('idle'), 4000);
+  } catch(e) {
+    setState('idle');
+    addMsg('jarvis', 'Connection error. Is the server running?');
   }
+}
 
   function toggleTextMode() {
     textMode = !textMode;
@@ -529,18 +540,12 @@
   }
 
   function sendText() {
-    const input = document.getElementById('textInput');
-    const text = input.value.trim();
-    if (!text) return;
-    addMessage('user', text);
-    input.value = '';
-    setState('thinking');
-    setTimeout(() => {
-      setState('speaking');
-      addMessage('jarvis', 'Processing your request, Abhi. Stand by.');
-      setTimeout(() => setState('idle'), 2000);
-    }, 1000);
-  }
+  const inp = document.getElementById('textInput');
+  const t = inp.value.trim(); if (!t) return;
+  addMsg('user', t); inp.value = '';
+  setState('thinking');
+  sendToJarvis(t);
+}
 
   function handleKey(e) {
     if (e.key === 'Enter') sendText();
